@@ -8,9 +8,14 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
-    fileServer := http.FileServer(http.Dir("."))
+	mux.Handle("/", http.FileServer(http.Dir(".")))
 
-	mux.Handle("/", fileServer)
+	assetsHandler := http.StripPrefix(
+		"/assets/",
+		http.FileServer(http.Dir("./assets")),
+	)
+
+	mux.Handle("/assets/", assetsHandler)
 
 	server := &http.Server{
 		Addr:    ":8080",
@@ -18,8 +23,5 @@ func main() {
 	}
 
 	log.Println("Starting server on :8080")
-	err := server.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(server.ListenAndServe())
 }
