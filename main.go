@@ -1,13 +1,36 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
+
+	_ "github.com/lib/pq"
+    "github.com/joho/godotenv"
+    "github.com/arthurnagem/chirpy/internal/database"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal("cannot connect to db:", err)
+	}
+
+	
+	dbQueries := database.New(db)
+
+	
+	apiCfg := &apiConfig{
+		Queries: dbQueries,
+	}
+
 	mux := http.NewServeMux()
-	apiCfg := &apiConfig{}
 
 	// health endpoint
 	mux.HandleFunc("/api/healthz", func(w http.ResponseWriter, r *http.Request) {

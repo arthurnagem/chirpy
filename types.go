@@ -1,9 +1,14 @@
 package main
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+	
+	"github.com/arthurnagem/chirpy/internal/database"
+)
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	Queries        *database.Queries
 }
 
 type parameters struct {
@@ -16,4 +21,8 @@ type errorResponse struct {
 
 type cleanedChirpResponse struct {
 	CleanedBody string `json:"cleaned_body"`
+}
+
+type createUserRequest struct {
+	Email string `json:"email"`
 }
