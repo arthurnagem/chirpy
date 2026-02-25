@@ -38,7 +38,7 @@ func main() {
 
 	apiCfg := &apiConfig{}
 
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
@@ -52,10 +52,10 @@ func main() {
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(assetsHandler))
 
 	// metrics
-	mux.HandleFunc("GET /metrics", apiCfg.metricsHandler)
+	mux.HandleFunc("GET /api/metrics", apiCfg.metricsHandler)
 
 	// reset
-	mux.HandleFunc("POST /reset", apiCfg.resetHandler)
+	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
 
 
 	server := &http.Server{
