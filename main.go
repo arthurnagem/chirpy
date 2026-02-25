@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"fmt"
 	"sync/atomic"
+	"encoding/json"
 )
 type apiConfig struct {
 	fileserverHits atomic.Int32
@@ -42,6 +43,55 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hits reset"))
 }
 
+func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Body string `json:"body"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	if len(params.Body) > 140 {
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
+		return
+	}
+
+	type validResponse struct {
+		Valid bool `json:"valid"`
+	}
+
+	respondWithJSON(w, http.StatusOK, validResponse{
+		Valid: true,
+	})
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	dat, err := json.Marshal(payload)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(dat)
+}
+
+func respondWithError(w http.ResponseWriter, code int, msg string) {
+	type errorResponse struct {
+		Error string `json:"error"`
+	}
+
+	respondWithJSON(w, code, errorResponse{
+		Error: msg,
+	})
+}
+
 func main() {
 	mux := http.NewServeMux()
 
@@ -65,6 +115,9 @@ func main() {
 
 	// reset
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
+
+	// validate
+	mux.HandleFunc("POST /api/validate_chirp", apiCfg.validateChirpHandler)
 
 
 	server := &http.Server{
