@@ -30,12 +30,24 @@ func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(html))
 }
 
-// Admin reset
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
+	if cfg.Platform != "dev" {
+		respondWithError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	// reset fileserver hits
 	cfg.fileserverHits.Store(0)
+
+	// delete all users
+	if err := cfg.Queries.DeleteAllUsers(r.Context()); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not reset users")
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hits reset"))
+	w.Write([]byte("Hits reset and users deleted"))
 }
 
 // Validate chirp
@@ -54,4 +66,31 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 
 	cleaned := cleanProfanity(params.Body)
 	respondWithJSON(w, http.StatusOK, cleanedChirpResponse{CleanedBody: cleaned})
+}
+
+func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		Email string `json:"email"`
+	}
+
+	var params request
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+
+	user, err := cfg.Queries.CreateUser(r.Context(), params.Email)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not create user")
+		return
+	}
+
+	resp := User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	}
+
+	respondWithJSON(w, http.StatusCreated, resp)
 }

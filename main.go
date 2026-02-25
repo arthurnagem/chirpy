@@ -28,6 +28,7 @@ func main() {
 	
 	apiCfg := &apiConfig{
 		Queries: dbQueries,
+		Platform: os.Getenv("PLATFORM"),
 	}
 
 	mux := http.NewServeMux()
@@ -52,6 +53,8 @@ func main() {
 
 	// API endpoints
 	mux.HandleFunc("/api/validate_chirp", apiCfg.validateChirpHandler)
+
+	mux.HandleFunc("/api/users", apiCfg.createUserHandler)
 
 	server := &http.Server{
 		Addr:    ":8080",

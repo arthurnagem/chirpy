@@ -2,6 +2,8 @@ package main
 
 import (
 	"sync/atomic"
+	"time"
+	"github.com/google/uuid"
 	
 	"github.com/arthurnagem/chirpy/internal/database"
 )
@@ -9,6 +11,14 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	Queries        *database.Queries
+	Platform	   string
+}
+
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
 }
 
 type parameters struct {
