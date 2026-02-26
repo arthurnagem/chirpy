@@ -52,7 +52,16 @@ func main() {
 	mux.HandleFunc("/admin/reset", apiCfg.resetHandler)
 
 	// API endpoints
-	mux.HandleFunc("/api/chirps", apiCfg.createChirpHandler)
+	mux.HandleFunc("/api/chirps", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			apiCfg.createChirpHandler(w, r)
+		case http.MethodGet:
+			apiCfg.listChirpsHandler(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
 
 	mux.HandleFunc("/api/users", apiCfg.createUserHandler)
 

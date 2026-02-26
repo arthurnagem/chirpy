@@ -137,3 +137,25 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 	respondWithJSON(w, http.StatusCreated, resp)
 }
+
+func (cfg *apiConfig) listChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.Queries.ListChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not fetch chirps")
+		return
+	}
+
+	// Map database.Chirp to your main package Chirp struct if needed
+	resp := make([]Chirp, len(chirps))
+	for i, c := range chirps {
+		resp[i] = Chirp{
+			ID:        c.ID,
+			CreatedAt: c.CreatedAt,
+			UpdatedAt: c.UpdatedAt,
+			Body:      c.Body,
+			UserID:    c.UserID,
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, resp)
+}
