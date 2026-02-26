@@ -35,6 +35,7 @@ type cleanedChirpResponse struct {
 
 type createUserRequest struct {
 	Email string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Chirp struct {

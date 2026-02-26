@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"github.com/google/uuid"
 	"github.com/arthurnagem/chirpy/internal/database"
+	"github.com/arthurnagem/chirpy/internal/auth"
 )
 
 
@@ -71,17 +72,28 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	type request struct {
-		Email string `json:"email"`
-	}
+	var params createUserRequest
 
-	var params request
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		respondWithError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
 
-	user, err := cfg.Queries.CreateUser(r.Context(), params.Email)
+	if params.Password == "" {
+		respondWithError(w, http.StatusBadRequest, "password required")
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not hash password")
+		return
+	}
+
+	user, err := cfg.Queries.CreateUser(r.Context(), database.CreateUserParams{
+		Email:          params.Email,
+		HashedPassword: hashedPassword,
+	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "could not create user")
 		return
@@ -181,6 +193,40 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: chirp.UpdatedAt,
 		Body:      chirp.Body,
 		UserID:    chirp.UserID,
+	}
+
+	respondWithJSON(w, http.StatusOK, resp)
+}
+
+func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	var params request
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+
+	user, err := cfg.Queries.GetUserByEmail(r.Context(), params.Email)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+		return
+	}
+
+	match, err := auth.CheckPasswordHash(params.Password, user.HashedPassword)
+	if err != nil || !match {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+		return
+	}
+
+	resp := User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
 	}
 
 	respondWithJSON(w, http.StatusOK, resp)

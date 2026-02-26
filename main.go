@@ -66,6 +66,8 @@ func main() {
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpHandler)
 
 	mux.HandleFunc("/api/users", apiCfg.createUserHandler)
+	
+	mux.HandleFunc("/api/login", apiCfg.loginHandler)
 
 	server := &http.Server{
 		Addr:    ":8080",
