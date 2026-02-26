@@ -63,6 +63,8 @@ func main() {
 		}
 	})
 
+	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpHandler)
+
 	mux.HandleFunc("/api/users", apiCfg.createUserHandler)
 
 	server := &http.Server{
