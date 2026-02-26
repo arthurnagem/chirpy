@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"github.com/google/uuid"
+	"github.com/arthurnagem/chirpy/internal/database"
 )
 
 
@@ -90,6 +92,47 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+	}
+
+	respondWithJSON(w, http.StatusCreated, resp)
+}
+
+func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		Body   string    `json:"body"`
+		UserID uuid.UUID `json:"user_id"`
+	}
+
+	var params request
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+
+	
+	if len(params.Body) > 140 {
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
+		return
+	}
+
+	cleanedBody := cleanProfanity(params.Body)
+
+	
+	chirp, err := cfg.Queries.CreateChirp(r.Context(), database.CreateChirpParams{
+        Body:   cleanedBody,
+        UserID: params.UserID,
+    })
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not create chirp")
+		return
+	}
+
+	resp := Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
 	}
 
 	respondWithJSON(w, http.StatusCreated, resp)

@@ -52,7 +52,7 @@ func main() {
 	mux.HandleFunc("/admin/reset", apiCfg.resetHandler)
 
 	// API endpoints
-	mux.HandleFunc("/api/validate_chirp", apiCfg.validateChirpHandler)
+	mux.HandleFunc("/api/chirps", apiCfg.createChirpHandler)
 
 	mux.HandleFunc("/api/users", apiCfg.createUserHandler)
 
